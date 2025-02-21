@@ -5,7 +5,7 @@ from google.cloud import storage
 import google.generativeai as genai
 import pyrebase
 
-app = Flask(__name__)
+app = Flask(__name__,template_folder='templates')
 app.secret_key = 'saipranaygcpassignment2'
 
 # Configure Firebase
