@@ -26,21 +26,27 @@ bucket_name = "gcpassignment2-csbucket"
 # Configure Google Gemini AI
 genai.configure(api_key="AIzaSyABY4oVvH7JrxpA70rv0vhlWLJ5WjAVjoI")
 
-def generate_metadata(image_path):
-    """Uses Gemini AI to generate title and description."""
-    model = genai.GenerativeModel("gemini-1.5-flash")
-    with open(image_path, "rb") as img_file:
-        image_data = img_file.read()
-    prompt = "Analyze this image and generate a short title and description in JSON format."
-    response = model.generate_content([prompt, image_data])
+@app.route('/upload', methods=['POST'])
+def upload():
+    if 'user' not in session:
+        return redirect('/login')
+
     try:
-        metadata = json.loads(response.text)
-        title = metadata.get('title', 'Untitled')
-        description = metadata.get('description', 'No description available')
-    except:
-        title = "Untitled"
-        description = "No description available"
-    return title, description
+        file = request.files['image']
+        filename = file.filename
+        file.save(filename)
+
+        # Generate metadata
+        title, description = generate_metadata(filename)
+
+        # Debugging logs
+        print(f"Uploaded: {filename}, Title: {title}, Description: {description}")
+
+        return render_template('view.html', filename=filename, title=title, description=description)
+
+    except Exception as e:
+        print(f"Upload error: {str(e)}")
+        return "Error processing image", 500
 
 @app.route('/')
 def index():
