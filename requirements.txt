@@ -1,7 +1,8 @@
 Flask==2.3.3
-gunicorn==21.2.0
 google-cloud-storage==2.10.0
+google-generativeai==0.8.2
+Pillow==9.5.0  # For image resizing
 pyrebase4==4.7.1
 firebase-admin==6.2.0
+gunicorn==21.2.0
 Werkzeug==2.3.7
-google-generativeai==0.8.2
