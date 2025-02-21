@@ -3,144 +3,112 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image Upload</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <title>Image Upload & Gallery</title>
+    <link rel="stylesheet" 
+          href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f5f5f5;
-            color: #333;
-            text-align: center;
-            padding: 20px;
+            font-family: 'Arial', sans-serif;
+            background-color: #f8f9fa;
         }
-
+        .container {
+            max-width: 800px;
+            margin: auto;
+            margin-top: 40px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
         h1 {
+            text-align: center;
+            color: #333;
             margin-bottom: 20px;
         }
-
-        .upload-form {
-            margin: 20px 0;
-            background-color: #fff;
+        .upload-box {
+            text-align: center;
             padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .upload-form input[type="file"] {
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            margin-right: 10px;
-        }
-
-        .upload-form button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            background-color: #4CAF50;
-            color: white;
+            border: 2px dashed #ccc;
+            border-radius: 10px;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: 0.3s;
         }
-
-        .upload-form button:hover {
-            background-color: #45a049;
+        .upload-box:hover {
+            background-color: #f1f1f1;
         }
-
-        .image-container {
-            display: inline-block;
-            margin: 10px;
-            border: 2px solid #ddd;
-            border-radius: 5px;
-            overflow: hidden;
-            transition: transform 0.2s;
-            background-color: #fff;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-
-        .image-container:hover {
-            transform: scale(1.05);
-            border-color: #aaa;
-        }
-
-        img {
-            max-width: 200px;
-            max-height: 150px;
-            display: block;
-            margin: 0 auto;
-        }
-
-        .image-title {
-            margin: 10px 0;
-            font-weight: bold;
-            font-size: 1.1em;
-        }
-
-        .logout-button {
+        .gallery {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
             margin-top: 20px;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            background-color: #f44336;
-            color: white;
-            cursor: pointer;
-            transition: background-color 0.3s;
+            justify-content: center;
         }
-
-        .logout-button:hover {
-            background-color: #d32f2f;
+        .image-card {
+            width: 200px;
+            background: white;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            transition: transform 0.2s;
+        }
+        .image-card:hover {
+            transform: scale(1.05);
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+        }
+        .btn-logout {
+            display: block;
+            width: 100%;
+            margin-top: 20px;
+            background: #dc3545;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            transition: 0.3s;
+        }
+        .btn-logout:hover {
+            background: #c82333;
         }
     </style>
 </head>
 <body>
-    <h1>Upload Your Images</h1>
-    <form class="upload-form" action="/upload" method="post" enctype="multipart/form-data">
-        <input type="file" name="file" accept="image/jpeg, image/jpg" required>
-        <button type="submit">Upload</button>
+
+<div class="container">
+    <h1><i class="fas fa-image"></i> Image Upload & Gallery</h1>
+    
+    <form action="/upload" method="post" enctype="multipart/form-data">
+        <div class="upload-box" onclick="document.getElementById('fileInput').click();">
+            <i class="fas fa-cloud-upload-alt fa-3x"></i>
+            <p>Click to Upload Image</p>
+        </div>
+        <input type="file" id="fileInput" name="image" accept="image/jpeg, image/jpg" required 
+               style="display: none;">
+        <button type="submit" class="btn btn-primary w-100 mt-3">Upload</button>
     </form>
 
-    <h2>Uploaded Images</h2>
-    <div id="uploaded-images">
-        <!-- Dynamically populated with uploaded images -->
+    <h2 class="mt-4 text-center">Uploaded Images</h2>
+    
+    <div class="gallery">
+        {% for image in images %}
+        <div class="image-card">
+            <a href="{{ url_for('view_file', filename=image, user_id=user_id) }}">
+                <img src="{{ url_for('getfiles', filename=image, user_id=user_id) }}" 
+                     alt="Uploaded Image">
+            </a>
+        </div>
+        {% else %}
+        <p class="text-center">No images uploaded yet.</p>
+        {% endfor %}
     </div>
 
-    <form action="/logout" method="post" style="display:inline;">
-        <button type="submit" class="logout-button">Logout</button>
-    </form>
+    <a href="{{ url_for('logout') }}" class="btn-logout">Logout</a>
+</div>
 
-    <script>
-        // Fetch and display uploaded images
-        async function fetchUploadedImages() {
-            const response = await fetch('/get-images');
-            const images = await response.json();
-
-            const container = document.getElementById('uploaded-images');
-            container.innerHTML = '';
-
-            images.forEach(image => {
-                const imageContainer = document.createElement('div');
-                imageContainer.className = 'image-container';
-
-                const imageLink = document.createElement('a');
-                imageLink.href = `/view/${image.filename}`;
-
-                const imgElement = document.createElement('img');
-                imgElement.src = `/files/${image.filename}`;
-                imgElement.alt = image.title;
-
-                const titleElement = document.createElement('div');
-                titleElement.className = 'image-title';
-                titleElement.textContent = image.title;
-
-                imageLink.appendChild(imgElement);
-                imageContainer.appendChild(imageLink);
-                imageContainer.appendChild(titleElement);
-                container.appendChild(imageContainer);
-            });
-        }
-
-        // Fetch images on page load
-        fetchUploadedImages();
-    </script>
 </body>
 </html>
