@@ -5,12 +5,12 @@ import os
 import json
 
 app = Flask(__name__)
-app.secret_key = 'your-secret-key'  # Change this to a secure secret key
+app.secret_key = 'saipranaygcpassignment2secretkey'  # Change this to a secure secret key
 
 # Google Cloud Storage and Gemini AI configuration
-bucket_name = "your-bucket-name"  # Replace with your Cloud Storage bucket name
+bucket_name = "gcpassignment2-csbucket"  # Replace with your Cloud Storage bucket name
 storage_client = storage.Client()
-genai.configure(api_key="your-gemini-api-key")  # Replace with your Gemini API key
+genai.configure(api_key="AIzaSyABY4oVvH7JrxpA70rv0vhlWLJ5WjAVjoI")  # Replace with your Gemini API key
 
 # Ensure the local 'files' directory exists
 os.makedirs('files', exist_ok=True)
