@@ -5,7 +5,7 @@ from google.cloud import storage
 import google.generativeai as genai
 import pyrebase
 
-app = Flask(__name__,template_folder='templates')
+app = Flask(__name__)
 app.secret_key = 'saipranaygcpassignment2'
 
 # Configure Firebase
@@ -14,7 +14,7 @@ firebaseConfig = {
     "authDomain": "gcpassignment-f605d.firebaseapp.com",
     "databaseURL": "https://gcpassignment-f605d-default-rtdb.firebaseio.com",
     "projectId": "gcpassignment-f605d",
-    "storageBucket": "https://console.cloud.google.com/storage/browser/gcpassignment2-csbucket"
+    "storageBucket": "gcpassignment2-csbucket"
 }
 firebase = pyrebase.initialize_app(firebaseConfig)
 auth = firebase.auth()
@@ -26,17 +26,21 @@ bucket_name = "gcpassignment2-csbucket"
 # Configure Google Gemini AI
 genai.configure(api_key="AIzaSyABY4oVvH7JrxpA70rv0vhlWLJ5WjAVjoI")
 
-def upload_to_gcs(bucket_name, source_file, destination_blob):
-    """Uploads a file to Google Cloud Storage."""
-    bucket = storage_client.bucket(bucket_name)
-    blob = bucket.blob(destination_blob)
-    blob.upload_from_filename(source_file)
-
 def generate_metadata(image_path):
     """Uses Gemini AI to generate title and description."""
     model = genai.GenerativeModel("gemini-1.5-flash")
-    response = model.generate_content(f"Describe the image: {image_path}")
-    return response.text
+    with open(image_path, "rb") as img_file:
+        image_data = img_file.read()
+    prompt = "Analyze this image and generate a short title and description in JSON format."
+    response = model.generate_content([prompt, image_data])
+    try:
+        metadata = json.loads(response.text)
+        title = metadata.get('title', 'Untitled')
+        description = metadata.get('description', 'No description available')
+    except:
+        title = "Untitled"
+        description = "No description available"
+    return title, description
 
 @app.route('/')
 def index():
@@ -53,17 +57,10 @@ def upload():
     filename = file.filename
     file.save(filename)
 
-    # Upload to GCS
-    upload_to_gcs(bucket_name, filename, filename)
-
     # Generate metadata
-    metadata = generate_metadata(filename)
-    with open(f"{filename}.txt", "w") as f:
-        f.write(metadata)
+    title, description = generate_metadata(filename)
     
-    upload_to_gcs(bucket_name, f"{filename}.txt", f"{filename}.txt")
-
-    return redirect('/')
+    return render_template('view.html', filename=filename, title=title, description=description)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
