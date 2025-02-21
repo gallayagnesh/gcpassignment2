@@ -26,15 +26,20 @@ bucket_name = "gcpassignment2-csbucket"
 # Configure Google Gemini AI
 genai.configure(api_key="AIzaSyABY4oVvH7JrxpA70rv0vhlWLJ5WjAVjoI")
 
+from PIL import Image
+
 def generate_metadata(image_path):
-    """Uses Gemini AI to generate a title and description correctly."""
+    """Uses Gemini AI to generate title and description with optimized memory usage."""
     model = genai.GenerativeModel("gemini-1.5-flash")
 
-    # Read the image in binary format
-    with open(image_path, "rb") as img_file:
+    # Resize image to reduce memory usage
+    img = Image.open(image_path)
+    img = img.resize((512, 512))  # Resize to 512x512 pixels
+    img.save("compressed.jpg", "JPEG")  # Save the resized image
+    
+    with open("compressed.jpg", "rb") as img_file:
         image_data = img_file.read()
 
-    # Send proper request to AI
     prompt = {
         "role": "user",
         "parts": [
@@ -45,12 +50,8 @@ def generate_metadata(image_path):
 
     try:
         response = model.start_chat(history=[prompt]).send_message("")
-        
-        # Debugging log (Check Cloud Run logs)
-        print(f"AI Response: {response.text}")
-
-        # Ensure response is valid JSON
         metadata = json.loads(response.text)
+
         title = metadata.get('title', 'Untitled')
         description = metadata.get('description', 'No description available')
 
@@ -60,7 +61,6 @@ def generate_metadata(image_path):
         description = "No description available"
 
     return title, description
-
 
 @app.route('/')
 def index():
