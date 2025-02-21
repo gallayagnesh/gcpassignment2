@@ -1,114 +1,18 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang='en'>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
     <title>Image Upload & Gallery</title>
-    <link rel="stylesheet" 
-          href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
-    <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f8f9fa;
-        }
-        .container {
-            max-width: 800px;
-            margin: auto;
-            margin-top: 40px;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-        h1 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 20px;
-        }
-        .upload-box {
-            text-align: center;
-            padding: 20px;
-            border: 2px dashed #ccc;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-        .upload-box:hover {
-            background-color: #f1f1f1;
-        }
-        .gallery {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-top: 20px;
-            justify-content: center;
-        }
-        .image-card {
-            width: 200px;
-            background: white;
-            padding: 10px;
-            border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-            text-align: center;
-            transition: transform 0.2s;
-        }
-        .image-card:hover {
-            transform: scale(1.05);
-        }
-        img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 8px;
-        }
-        .btn-logout {
-            display: block;
-            width: 100%;
-            margin-top: 20px;
-            background: #dc3545;
-            color: white;
-            padding: 10px;
-            border-radius: 5px;
-            text-align: center;
-            transition: 0.3s;
-        }
-        .btn-logout:hover {
-            background: #c82333;
-        }
-    </style>
+    <link rel='stylesheet' 
+          href='https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css'>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js'></script>
 </head>
 <body>
-
-<div class="container">
-    <h1><i class="fas fa-image"></i> Image Upload & Gallery</h1>
-    
-    <form action="/upload" method="post" enctype="multipart/form-data">
-        <div class="upload-box" onclick="document.getElementById('fileInput').click();">
-            <i class="fas fa-cloud-upload-alt fa-3x"></i>
-            <p>Click to Upload Image</p>
-        </div>
-        <input type="file" id="fileInput" name="image" accept="image/jpeg, image/jpg" required 
-               style="display: none;">
-        <button type="submit" class="btn btn-primary w-100 mt-3">Upload</button>
+    <h1>Image Upload & Gallery</h1>
+    <form action='/upload' method='post' enctype='multipart/form-data'>
+        <input type='file' name='image' required>
+        <button type='submit'>Upload</button>
     </form>
-
-    <h2 class="mt-4 text-center">Uploaded Images</h2>
-    
-    <div class="gallery">
-        {% for image in images %}
-        <div class="image-card">
-            <a href="{{ url_for('view_file', filename=image, user_id=user_id) }}">
-                <img src="{{ url_for('getfiles', filename=image, user_id=user_id) }}" 
-                     alt="Uploaded Image">
-            </a>
-        </div>
-        {% else %}
-        <p class="text-center">No images uploaded yet.</p>
-        {% endfor %}
-    </div>
-
-    <a href="{{ url_for('logout') }}" class="btn-logout">Logout</a>
-</div>
-
 </body>
 </html>
