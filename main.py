@@ -1,161 +1,87 @@
-from flask import Flask, request, jsonify, render_template, redirect, session, send_from_directory
-from google.cloud import storage
-import google.generativeai as genai
 import os
 import json
+from flask import Flask, request, render_template, redirect, session, send_from_directory
+from google.cloud import storage
+import google.generativeai as genai
+import pyrebase
 
 app = Flask(__name__)
-app.secret_key = 'saipranaygcpassignment2secretkey'  # Change this to a secure secret key
+app.secret_key = 'saipranaygcpassignment2'
 
-# Google Cloud Storage and Gemini AI configuration
-bucket_name = "gcpassignment2-csbucket"  # Replace with your Cloud Storage bucket name
+# Configure Firebase
+firebaseConfig = {
+    "apiKey": "AIzaSyBxoqEroPT5ZQGtQ9xhkP-B8eCmMrj7tk8",
+    "authDomain": "gcpassignment-f605d.firebaseapp.com",
+    "databaseURL": "https://gcpassignment-f605d-default-rtdb.firebaseio.com",
+    "projectId": "gcpassignment-f605d",
+    "storageBucket": "https://console.cloud.google.com/storage/browser/gcpassignment2-csbucket"
+}
+firebase = pyrebase.initialize_app(firebaseConfig)
+auth = firebase.auth()
+
+# Configure Google Cloud Storage
 storage_client = storage.Client()
-genai.configure(api_key="AIzaSyABY4oVvH7JrxpA70rv0vhlWLJ5WjAVjoI")  # Replace with your Gemini API key
+bucket_name = "gcpassignment2-csbucket"
 
-# Ensure the local 'files' directory exists
-os.makedirs('files', exist_ok=True)
+# Configure Google Gemini AI
+genai.configure(api_key="AIzaSyABY4oVvH7JrxpA70rv0vhlWLJ5WjAVjoI")
+
+def upload_to_gcs(bucket_name, source_file, destination_blob):
+    """Uploads a file to Google Cloud Storage."""
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(destination_blob)
+    blob.upload_from_filename(source_file)
+
+def generate_metadata(image_path):
+    """Uses Gemini AI to generate title and description."""
+    model = genai.GenerativeModel("gemini-1.5-flash")
+    response = model.generate_content(f"Describe the image: {image_path}")
+    return response.text
 
 @app.route('/')
 def index():
-    """
-    Render the main page with the image upload form and list of uploaded images.
-    """
-    user_id = session.get('user')
-    if not user_id:
+    if 'user' not in session:
         return redirect('/login')
-
-    # Fetch and display uploaded images
-    images = get_user_images(user_id)
-    return render_template('index.html', images=images, user_id=user_id)
+    return render_template('index.html')
 
 @app.route('/upload', methods=['POST'])
 def upload():
-    """
-    Handle image uploads, generate metadata using Gemini AI, and save files to Cloud Storage.
-    """
-    user_id = session.get('user')
-    if not user_id:
+    if 'user' not in session:
         return redirect('/login')
+    
+    file = request.files['image']
+    filename = file.filename
+    file.save(filename)
 
-    if 'file' not in request.files:
-        return "No file uploaded", 400
+    # Upload to GCS
+    upload_to_gcs(bucket_name, filename, filename)
 
-    file = request.files['file']
-    if file.filename == '':
-        return "No file selected", 400
-
-    # Save the file locally temporarily
-    local_path = os.path.join('files', file.filename)
-    file.save(local_path)
-
-    # Upload the file to Google Cloud Storage
-    blob = storage_client.bucket(bucket_name).blob(f"{user_id}/{file.filename}")
-    blob.upload_from_filename(local_path)
-
-    # Generate metadata using Gemini AI
-    try:
-        response = genai.generate_text(prompt=f"Describe the image {file.filename}")
-        metadata = {
-            "title": response.candidates[0].output,
-            "description": response.candidates[0].output
-        }
-    except Exception as e:
-        metadata = {
-            "title": "No title generated",
-            "description": "No description generated"
-        }
-
-    # Save metadata as a JSON file in Cloud Storage
-    metadata_blob = storage_client.bucket(bucket_name).blob(f"{user_id}/{file.filename}.json")
-    metadata_blob.upload_from_string(json.dumps(metadata), content_type='application/json')
-
-    # Clean up the local file
-    os.remove(local_path)
+    # Generate metadata
+    metadata = generate_metadata(filename)
+    with open(f"{filename}.txt", "w") as f:
+        f.write(metadata)
+    
+    upload_to_gcs(bucket_name, f"{filename}.txt", f"{filename}.txt")
 
     return redirect('/')
 
-@app.route('/get-images')
-def get_images():
-    """
-    Return a list of uploaded images for the current user.
-    """
-    user_id = session.get('user')
-    if not user_id:
-        return jsonify([])
-
-    # List images from Cloud Storage
-    blobs = storage_client.list_blobs(bucket_name, prefix=f"{user_id}/")
-    images = []
-    for blob in blobs:
-        if blob.name.lower().endswith(('.jpg', '.jpeg', '.png')):
-            images.append({
-                "filename": blob.name.split('/')[-1],
-                "title": blob.name.split('/')[-1]  # Fetch the title from metadata if needed
-            })
-    return jsonify(images)
-
-@app.route('/files/<filename>')
-def get_file(filename):
-    """
-    Serve uploaded images from the local filesystem.
-    """
-    return send_from_directory('files', filename)
-
-@app.route('/view/<filename>')
-def view_file(filename):
-    """
-    Display the image and its metadata.
-    """
-    user_id = session.get('user')
-    if not user_id:
-        return redirect('/login')
-
-    # Fetch metadata from Cloud Storage
-    metadata_blob = storage_client.bucket(bucket_name).blob(f"{user_id}/{filename}.json")
-    if metadata_blob.exists():
-        metadata = json.loads(metadata_blob.download_as_text())
-    else:
-        metadata = {
-            "title": "No title available",
-            "description": "No description available"
-        }
-
-    return render_template('view.html', filename=filename, title=metadata['title'], description=metadata['description'])
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    """
-    Handle user login.
-    """
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
-        # Simulate user authentication (replace with Firebase or another auth system)
-        session['user'] = email
-        return redirect('/')
+        try:
+            user = auth.sign_in_with_email_and_password(email, password)
+            session['user'] = user['localId']
+            return redirect('/')
+        except:
+            return "Invalid credentials"
     return render_template('login.html')
 
 @app.route('/logout')
 def logout():
-    """
-    Handle user logout.
-    """
     session.pop('user', None)
     return redirect('/login')
 
-def get_user_images(user_id):
-    """
-    Helper function to fetch uploaded images for a specific user.
-    """
-    blobs = storage_client.list_blobs(bucket_name, prefix=f"{user_id}/")
-    images = []
-    for blob in blobs:
-        if blob.name.lower().endswith(('.jpg', '.jpeg', '.png')):
-            images.append({
-                "filename": blob.name.split('/')[-1],
-                "title": blob.name.split('/')[-1]  # Fetch the title from metadata if needed
-            })
-    return images
-
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080, debug=True)
+    app.run(host='0.0.0.0', port=8080)
