@@ -27,18 +27,29 @@ bucket_name = "gcpassignment2-csbucket"
 genai.configure(api_key="AIzaSyABY4oVvH7JrxpA70rv0vhlWLJ5WjAVjoI")
 
 def generate_metadata(image_path):
-    """Uses Gemini AI to generate title and description with better error handling."""
+    """Uses Gemini AI to generate a title and description correctly."""
     model = genai.GenerativeModel("gemini-1.5-flash")
 
+    # Read the image in binary format
     with open(image_path, "rb") as img_file:
         image_data = img_file.read()
 
-    prompt = "Analyze this image and generate a short title and description in JSON format."
+    # Send proper request to AI
+    prompt = {
+        "role": "user",
+        "parts": [
+            "Analyze this image and generate a short title and description in JSON format.",
+            {"image": image_data}
+        ]
+    }
 
     try:
-        response = model.generate_content([prompt, image_data])
+        response = model.start_chat(history=[prompt]).send_message("")
+        
+        # Debugging log (Check Cloud Run logs)
+        print(f"AI Response: {response.text}")
 
-        # Ensure the response is valid JSON
+        # Ensure response is valid JSON
         metadata = json.loads(response.text)
         title = metadata.get('title', 'Untitled')
         description = metadata.get('description', 'No description available')
@@ -49,6 +60,7 @@ def generate_metadata(image_path):
         description = "No description available"
 
     return title, description
+
 
 @app.route('/')
 def index():
@@ -70,7 +82,7 @@ def upload():
         title, description = generate_metadata(filename)
 
         # Debugging logs
-        print(f"Uploaded: {filename}, Title: {title}, Description: {description}")
+        print(f"AI Generated -> Title: {title}, Description: {description}")
 
         return render_template('view.html', filename=filename, title=title, description=description)
 
